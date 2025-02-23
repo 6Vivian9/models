@@ -82,13 +82,28 @@ def normalize_image(
 ) -> tf.Tensor:
   """Normalizes the image to zero mean and unit variance.
 
-  If the input image dtype is float, it is expected to either have values in
-  [0, 1) and offset is MEAN_NORM, or have values in [0, 255] and offset is
-  MEAN_RGB.
+  This function normalizes the input image by subtracting the `offset`
+  and dividing by the `scale`.
+
+  **Important Note about Input Types and Normalization:**
+
+  * **Integer Images:** If the input `image` is an integer type (e.g., `uint8`),
+    the provided `offset` and `scale` values should be already **normalized**
+    to the range [0, 1]. This is because the function converts integer images to
+    float32 with values in the range [0, 1] before the normalization happens.
+
+  * **Float Images:** If the input `image` is a float type (e.g., `float32`),
+    the `offset` and `scale` values should be in the **same range** as the
+    image data.
+      - If the image has values in [0, 1], the `offset` and `scale` should
+        also be in [0, 1].
+      - If the image has values in [0, 255], the `offset` and `scale` should
+        also be in [0, 255].
 
   Args:
-    image: A tf.Tensor in either (1) float dtype with values in range [0, 1) or
-      [0, 255], or (2) int type with values in range [0, 255].
+    image: A `tf.Tensor` in either:
+           (1) float dtype with values in range [0, 1) or [0, 255], or
+           (2) int type with values in range [0, 255].
     offset: A tuple of mean values to be subtracted from the image.
     scale: A tuple of normalization factors.
 
@@ -182,7 +197,7 @@ def resize_and_crop_image(
   2. Pad the rescaled image to the padded_size.
 
   Args:
-    image: a `Tensor` of shape [height, width, 3] representing an image.
+    image: a `Tensor` of shape [height, width, c] representing an image.
     desired_size: a `Tensor` or `int` list/tuple of two elements representing
       [height, width] of the desired actual output image size.
     padded_size: a `Tensor` or `int` list/tuple of two elements representing
@@ -201,7 +216,7 @@ def resize_and_crop_image(
       behaviour is to place it at left top corner.
 
   Returns:
-    output_image: `Tensor` of shape [height, width, 3] where [height, width]
+    output_image: `Tensor` of shape [height, width, c] where [height, width]
       equals to `output_size`.
     image_info: a 2D `Tensor` that encodes the information of the image and the
       applied preprocessing. It is in the format of
@@ -786,7 +801,7 @@ def random_horizontal_flip(
   """Randomly flips input image and bounding boxes and/or masks horizontally.
 
   Expects input tensors without the batch dimension; i.e. for RGB image assume
-  rank-3 input like [h, w, 3], for masks assume either [h, w, 1] or [1, h, w].
+  rank-3 input like [h, w, c], for masks assume either [h, w, 1] or [1, h, w].
 
   Args:
     image: `tf.Tensor`, the image to apply the random flip, [h, w, channels].
